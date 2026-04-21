@@ -4956,8 +4956,8 @@ let _geminiCooldownUntil = 0;
 const GEMINI_MIN_INTERVAL = 4500;
 
 async function callGemini(prompt) {
-  if (!GROQ_API_KEY || GROQ_API_KEY === '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') {
-    lastGeminiError = 'No Groq API key set — replace placeholder on line 4754 of the HTML';
+  if (!GROQ_API_KEY || !GROQ_API_KEY.startsWith('gsk_')) {
+    lastGeminiError = 'No valid Groq API key set — check line 4755 of the HTML';
     return null;
   }
   
@@ -5044,7 +5044,7 @@ function getStackIngredientNames() {
 }
 
 async function generateAiNewsSummary(personId, liveData, opts = {}) {
-  if (!GROQ_API_KEY || GROQ_API_KEY === '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') return null;
+  if (!GROQ_API_KEY || !GROQ_API_KEY.startsWith('gsk_')) return null;
   const forceRefresh = opts.forceRefresh === true;
   const cached = aiCache[personId];
   if (!forceRefresh && cached && (Date.now() - cached.timestamp) < AI_CACHE_TTL) return cached.data;
