@@ -4749,9 +4749,10 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 min — don't re-fetch if opened again q
 // ══════════════════════════════════════════════════════════════════
 let YT_API_KEY = 'AIzaSyBz610p86kzPjka6R2GVRsTMIJniJCBBpY';  // ← Marko's YouTube Data API v3 key
 
-// ── Gemini API key (free tier, 1500 req/day on Flash model) ──
-// Get free at: aistudio.google.com/apikey
-let GEMINI_API_KEY = 'AIzaSyBV9I9MM_kS3wp-jqpJN5lgxfdN1mlKORc';
+// ── Groq API key (free tier, 14,400 req/day on Llama 3.3 70B) ──
+// Get free at: console.groq.com/keys
+// REPLACE the placeholder below with your actual key before deploying
+let GROQ_API_KEY = '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';
 // ══════════════════════════════════════════════════════════════════
 
 // ── Per-person RSS feeds & YouTube channels ──
@@ -4955,53 +4956,66 @@ let _geminiCooldownUntil = 0;
 const GEMINI_MIN_INTERVAL = 4500;
 
 async function callGemini(prompt) {
-  if (!GEMINI_API_KEY) { lastGeminiError = 'No Gemini API key set'; return null; }
+  if (!GROQ_API_KEY || GROQ_API_KEY === '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') {
+    lastGeminiError = 'No Groq API key set — replace placeholder on line 4754 of the HTML';
+    return null;
+  }
   
   // Cooldown check — if we recently got 429, back off
   if (Date.now() < _geminiCooldownUntil) {
     const waitSec = Math.ceil((_geminiCooldownUntil - Date.now()) / 1000);
-    lastGeminiError = `Rate limited — cooling down ${waitSec}s (free tier is 15 req/min)`;
+    lastGeminiError = `Rate limited — cooling down ${waitSec}s`;
     return null;
   }
   
-  // Space requests at least 4.5s apart
+  // Space requests at least 4.5s apart (Groq free tier is 30 req/min on Llama 70B, plenty of headroom)
   const sinceLastCall = Date.now() - _geminiLastCall;
   if (sinceLastCall < GEMINI_MIN_INTERVAL) {
     await new Promise(r => setTimeout(r, GEMINI_MIN_INTERVAL - sinceLastCall));
   }
   _geminiLastCall = Date.now();
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_API_KEY;
+  
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
   try {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 15000);
     const res = await fetch(url, {
       method: 'POST',
       signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + GROQ_API_KEY
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 1200, responseMimeType: 'application/json' }
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: 'You are a longevity research analyst. Always respond with valid JSON only — no markdown, no code fences, no prose before or after the JSON object.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.3,
+        max_tokens: 1200,
+        response_format: { type: 'json_object' }
       })
     });
     clearTimeout(tid);
     if (!res.ok) {
       const err = await res.text().catch(()=>'');
       if (res.status === 429) {
-        // Quota exceeded — cooldown for 60s before trying again
+        // Rate limit — cooldown for 60s before trying again
         _geminiCooldownUntil = Date.now() + 60000;
-        lastGeminiError = 'Quota/rate limit exceeded — cooldown for 60s. Free tier is 15 req/min, 1500/day.';
+        lastGeminiError = 'Rate limit exceeded — cooldown for 60s. Groq free tier is ~30 req/min.';
       } else if (res.status === 400) {
-        lastGeminiError = 'Invalid request — check API key format';
-      } else if (res.status === 403) {
-        lastGeminiError = 'API key rejected — check key is valid and Generative Language API is enabled';
+        lastGeminiError = 'Invalid request: ' + (err ? err.substring(0,200) : '');
+      } else if (res.status === 401) {
+        lastGeminiError = 'API key rejected — check Groq key is valid (console.groq.com/keys)';
       } else {
         lastGeminiError = 'HTTP ' + res.status + (err ? ' — ' + err.substring(0,150) : '');
       }
-      console.warn('[Gemini]', lastGeminiError);
+      console.warn('[Groq]', lastGeminiError);
       return null;
     }
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data?.choices?.[0]?.message?.content;
     if (!text) { lastGeminiError = 'Empty response'; return null; }
     lastGeminiError = null;
     try { return JSON.parse(text); }
@@ -5014,7 +5028,7 @@ async function callGemini(prompt) {
     }
   } catch(e) {
     lastGeminiError = e.name === 'AbortError' ? 'Request timed out (>15s)' : e.message;
-    console.warn('[Gemini] error:', lastGeminiError);
+    console.warn('[Groq] error:', lastGeminiError);
     return null;
   }
 }
@@ -5030,7 +5044,7 @@ function getStackIngredientNames() {
 }
 
 async function generateAiNewsSummary(personId, liveData, opts = {}) {
-  if (!GEMINI_API_KEY) return null;
+  if (!GROQ_API_KEY || GROQ_API_KEY === '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') return null;
   const forceRefresh = opts.forceRefresh === true;
   const cached = aiCache[personId];
   if (!forceRefresh && cached && (Date.now() - cached.timestamp) < AI_CACHE_TTL) return cached.data;
