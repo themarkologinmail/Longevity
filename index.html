@@ -1428,18 +1428,63 @@ img{max-width:100%;display:block}
 /* ================================================================
    PERSON SELECTOR — slim initials row, NO photos
 ================================================================ */
-.person-selector {
+/* Wrapper that holds the scroll arrows + the scrolling strip */
+.selector-wrap {
+  position: relative;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
-  padding: 8px 24px;
-  display: flex; align-items: center; gap: 8px;
-  overflow-x: auto;
-  position: relative;
 }
-.person-selector::after {
+.selector-wrap::after {
   content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
   background: linear-gradient(90deg, transparent, var(--person-accent), transparent);
   opacity:.4;
+  pointer-events: none;
+}
+
+.person-selector {
+  padding: 8px 44px;
+  display: flex; align-items: center; gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.person-selector::-webkit-scrollbar { display: none }
+
+/* Left/right scroll arrow buttons — anchored to selector-wrap edges */
+.selector-arrow {
+  position: absolute;
+  top: 0; bottom: 1px;
+  width: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  background: var(--bg-surface);
+  border: none;
+  color: var(--text-secondary);
+  font-size: 18px; font-weight: 700;
+  z-index: 5;
+  transition: color .15s, opacity .15s;
+  user-select: none;
+}
+.selector-arrow:hover { color: var(--person-accent) }
+.selector-arrow:disabled,
+.selector-arrow.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.selector-arrow.left {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-surface) 60%, transparent);
+}
+.selector-arrow.right {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-surface) 60%, transparent);
+}
+
+.person-selector {
+  background: transparent;
+  border-bottom: none;
+  position: relative;
 }
 .person-chip {
   flex-shrink: 0;
@@ -1594,6 +1639,78 @@ img{max-width:100%;display:block}
   transition:var(--transition);
 }
 .hero-link:hover{ background:rgba(0,212,255,.15) }
+
+/* ── Collapsible hero toggle button (appears on every hero) ── */
+.hero-toggle {
+  position: absolute; top: 10px; right: 12px; z-index: 3;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg-card); border: 1px solid var(--border-bright);
+  color: var(--text-secondary); font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: var(--transition);
+  user-select: none;
+}
+.hero-toggle:hover { color: var(--person-accent); border-color: var(--person-accent); background: var(--bg-elevated) }
+.hero-toggle-icon { transition: transform 0.25s ease; display: inline-block; line-height: 1 }
+.person-hero.collapsed .hero-toggle-icon,
+.all-hero.collapsed   .hero-toggle-icon { transform: rotate(180deg) }
+
+/* ── Person-hero collapsed (slim strip) ── */
+.person-hero { transition: padding 0.25s ease, gap 0.25s ease }
+.person-hero.collapsed {
+  padding: 10px 14px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.person-hero.collapsed .hero-photo-wrap {
+  width: 42px; height: 52px;
+  border-width: 1.5px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04), 0 2px 8px rgba(0,0,0,.4);
+}
+.person-hero.collapsed .hero-photo-fallback { font-size: 18px }
+.person-hero.collapsed .hero-title,
+.person-hero.collapsed .hero-tagline,
+.person-hero.collapsed .hero-bio,
+.person-hero.collapsed .hero-meta { display: none }
+.person-hero.collapsed .hero-name { font-size: 15px; margin-bottom: 0 }
+.person-hero.collapsed::after { display: none }
+
+/* When MH Stack hero is collapsed, also collapse the products grid into compact buttons */
+.person-hero.collapsed ~ .stack-product-grid .stack-product-card {
+  padding: 6px 10px !important;
+  gap: 6px !important;
+}
+.person-hero.collapsed ~ .stack-product-grid .stack-product-img,
+.person-hero.collapsed ~ .stack-product-grid .stack-product-desc {
+  display: none !important;
+}
+
+/* When ANY hero is collapsed, also hide the stats grid below it
+   (6 metric cards: Epigenetic Speed, Telomere Age, Sleep Score, etc.) */
+.person-hero.collapsed ~ .stats-grid,
+.person-hero.collapsed ~ * .stats-grid,
+.all-hero.collapsed   ~ .stats-grid {
+  display: none;
+}
+
+/* ── All-hero collapsed ── */
+.all-hero { transition: padding 0.25s ease }
+.all-hero.collapsed { margin-bottom: 10px; cursor: pointer }
+.all-hero.collapsed .all-hero-top {
+  padding: 8px 14px;
+  border-bottom: none;
+  gap: 10px;
+}
+.all-hero.collapsed .all-photo-strip .strip-photo,
+.all-hero.collapsed .all-photo-strip .strip-fallback {
+  width: 26px; height: 26px;
+}
+.all-hero.collapsed .all-hero-title { font-size: 14px }
+.all-hero.collapsed .all-hero-sub,
+.all-hero.collapsed .all-aggregate-stats { display: none }
+.all-hero.collapsed .all-hero-top > div:nth-child(2) > div:nth-child(3) { display: none } /* researcher pill row */
 
 /* ALL composite hero */
 .all-hero {
@@ -2049,22 +2166,39 @@ img{max-width:100%;display:block}
 /* crossref table */
 .crossref-wrap{
   background:var(--bg-surface); border:1px solid var(--border);
-  border-radius:var(--radius-lg); overflow:hidden;
+  border-radius:var(--radius-lg);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
 }
-.crossref-table{ width:100%; border-collapse:collapse }
+.crossref-table{ width:100%; border-collapse:collapse; min-width:760px }
 .crossref-table th{
   padding:12px 10px; text-align:center; font-size:11px; font-weight:600;
   text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted);
   background:var(--bg-card); border-bottom:1px solid var(--border);
   white-space:nowrap;
 }
-.crossref-table th:first-child { text-align:left; padding-left:16px; min-width:200px; }
+.crossref-table th:first-child {
+  text-align:left; padding-left:16px; min-width:200px;
+  position: sticky; left: 0; z-index: 2;
+  background: var(--bg-card);
+  box-shadow: 2px 0 8px rgba(0,0,0,.25);
+}
 .crossref-table td{
   padding:11px 14px; border-bottom:1px solid var(--border); font-size:12px;
   vertical-align:middle;
 }
+.crossref-table td:first-child,
+.crossref-table tfoot td:first-child {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--bg-surface);
+  box-shadow: 2px 0 8px rgba(0,0,0,.2);
+}
+.crossref-table tfoot td:first-child { background: var(--bg-card) }
 .crossref-table tr:last-child td{ border-bottom:none }
 .crossref-table tr:hover td{ background:var(--bg-elevated) }
+.crossref-table tr:hover td:first-child { background: var(--bg-elevated) }
 .dot-yes{ color:var(--green); font-size:16px; filter:drop-shadow(0 0 4px currentColor) }
 .dot-no { color:var(--border-bright); font-size:14px; opacity:.35 }
 .dot-partial{ color:var(--amber); font-size:16px; filter:drop-shadow(0 0 3px rgba(245,158,11,.4)) }
@@ -2162,6 +2296,79 @@ img{max-width:100%;display:block}
   .two-col{ grid-template-columns:1fr }
   .all-grid{ grid-template-columns:1fr }
   .all-aggregate-stats{ grid-template-columns:repeat(2,1fr) }
+
+  /* When collapsed on mobile, override the column-flex layout */
+  .person-hero.collapsed{ flex-direction:row; gap:12px }
+  .person-hero.collapsed .hero-photo-wrap{ width:42px; height:52px }
+
+  /* Tighter cell padding on mobile */
+  .recs-table td, .recs-table th { padding: 9px 10px !important; font-size: 12px !important }
+
+  /* Source Matrix (per-person) — keep Topic, Protocol, Status only.
+     Hide cols 3 (Source), 4 (Date), 5 (Conf) */
+  .recs-table.source-matrix th:nth-child(3),
+  .recs-table.source-matrix td:nth-child(3),
+  .recs-table.source-matrix th:nth-child(4),
+  .recs-table.source-matrix td:nth-child(4),
+  .recs-table.source-matrix th:nth-child(5),
+  .recs-table.source-matrix td:nth-child(5) { display: none }
+
+  /* All Researchers — keep caret, Person, Protocol, Status. Hide Topic(3), Source(5), Date(6), Conf(7) */
+  .recs-table.all-researchers th:nth-child(3),
+  .recs-table.all-researchers td:nth-child(3),
+  .recs-table.all-researchers th:nth-child(5),
+  .recs-table.all-researchers td:nth-child(5),
+  .recs-table.all-researchers th:nth-child(6),
+  .recs-table.all-researchers td:nth-child(6),
+  .recs-table.all-researchers th:nth-child(7),
+  .recs-table.all-researchers td:nth-child(7) { display: none }
+
+  /* MH Stack — keep Ingredient + Dose + carat. Hide Product(3), Category(4), Primary Benefit(5) */
+  #stackTable th:nth-child(3),
+  #stackTable td:nth-child(3),
+  #stackTable th:nth-child(4),
+  #stackTable td:nth-child(4),
+  #stackTable th:nth-child(5),
+  #stackTable td:nth-child(5) { display: none }
+
+  /* Allow protocol titles to wrap; hide tiny preview line */
+  .protocol-cell { max-width: none !important }
+  .protocol-summary-preview { display: none }
+
+  /* Constrain expanded drawer on All Protocols to prevent right-edge cutoff */
+  .all-rec-detail td { padding: 0 !important }
+  .all-rec-detail-grid {
+    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+    gap: 14px !important;
+  }
+  .all-rec-detail-grid > div { min-width: 0 !important; word-break: break-word }
+}
+
+/* Inline detail row (mobile-only, replaces the side detail panel) */
+.inline-detail-row { display: none }
+@media (max-width: 1100px) {
+  .inline-detail-row.open { display: table-row }
+  .inline-detail-row.open td {
+    padding: 0 !important;
+    background: var(--bg-base);
+    border-left: 3px solid var(--person-accent);
+  }
+  .inline-detail-content {
+    padding: 14px 16px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .inline-detail-content .di-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; line-height: 1.3 }
+  .inline-detail-content .di-summary { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px }
+  .inline-detail-content .di-meta { font-size: 11px; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px }
+  .inline-detail-content .di-link {
+    display: inline-block; padding: 6px 12px;
+    background: var(--person-accent); color: var(--text-inverse, #0a0a0a);
+    border-radius: 4px; font-size: 11px; font-weight: 700; text-decoration: none;
+  }
+  /* Hide the standalone side-panel on mobile since detail is now inline */
+  .detail-panel { display: none }
 }
 
 /* ================================================================
@@ -2485,7 +2692,7 @@ img{max-width:100%;display:block}
 }
 
 /* ============================================================
-   AI ANALYSIS PANEL (Gemini-powered news summary)
+   AI ANALYSIS PANEL (Groq / Llama 3.3 70B)
 ============================================================ */
 .ai-panel {
   margin-bottom: 20px;
@@ -2653,7 +2860,11 @@ img{max-width:100%;display:block}
 </header>
 
 <!-- PERSON SELECTOR — with photos -->
-<div class="person-selector" id="personSelector"></div>
+<div class="selector-wrap">
+  <button class="selector-arrow left" id="selectorArrowLeft" onclick="scrollSelector(-1)" aria-label="Scroll left">‹</button>
+  <div class="person-selector" id="personSelector"></div>
+  <button class="selector-arrow right" id="selectorArrowRight" onclick="scrollSelector(1)" aria-label="Scroll right">›</button>
+</div>
 
 <!-- MAIN -->
 <main class="main" id="mainContent"></main>
@@ -2755,7 +2966,42 @@ function renderSelector() {
   </div>`;
   // Add Person button removed - dashboard is now curated to 7 researchers
   sel.innerHTML = html;
+  // Update arrow visibility now that chips are in place
+  requestAnimationFrame(updateSelectorArrows);
 }
+
+// ── Person selector scroll arrows ──
+function scrollSelector(direction) {
+  const sel = document.getElementById('personSelector');
+  if (!sel) return;
+  // Scroll by ~70% of visible width per click — feels right for stepping through chips
+  const step = Math.max(150, sel.clientWidth * 0.7);
+  sel.scrollBy({ left: direction * step, behavior: 'smooth' });
+}
+
+function updateSelectorArrows() {
+  const sel = document.getElementById('personSelector');
+  const left = document.getElementById('selectorArrowLeft');
+  const right = document.getElementById('selectorArrowRight');
+  if (!sel || !left || !right) return;
+  const maxScroll = sel.scrollWidth - sel.clientWidth;
+  // Hide left arrow when at the start; hide right when at the end
+  // (1px tolerance for sub-pixel scroll positions)
+  left.classList.toggle('hidden', sel.scrollLeft <= 1);
+  right.classList.toggle('hidden', sel.scrollLeft >= maxScroll - 1);
+  // If everything fits with no overflow, hide both arrows
+  if (maxScroll <= 1) {
+    left.classList.add('hidden');
+    right.classList.add('hidden');
+  }
+}
+
+// Re-evaluate arrows on selector scroll + window resize
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('personSelector');
+  if (sel) sel.addEventListener('scroll', updateSelectorArrows, { passive: true });
+  window.addEventListener('resize', updateSelectorArrows);
+});
 
 function switchPerson(id) {
   currentPersonId = id;
@@ -2772,6 +3018,36 @@ function switchPerson(id) {
   renderSelector();
   renderPerson(id);
 }
+
+// ================================================================
+// COLLAPSIBLE HERO — manual toggle + auto-collapse on tap below
+// ================================================================
+function toggleHero(heroId) {
+  const hero = document.getElementById(heroId);
+  if (!hero) return;
+  hero.classList.toggle('collapsed');
+}
+function collapseHero() {
+  const h = document.getElementById('personHero') || document.getElementById('allHero');
+  if (h && !h.classList.contains('collapsed')) h.classList.add('collapsed');
+}
+function expandHero() {
+  const h = document.getElementById('personHero') || document.getElementById('allHero');
+  if (h && h.classList.contains('collapsed')) h.classList.remove('collapsed');
+}
+
+// Universal delegate: any click below the hero collapses it.
+// Capture phase so it runs before per-element handlers; idempotent (no-op if already collapsed).
+document.addEventListener('click', function(e) {
+  const hero = document.getElementById('personHero') || document.getElementById('allHero');
+  if (!hero) return;
+  // Don't collapse if click is INSIDE the hero (use the toggle for that)
+  if (hero.contains(e.target)) return;
+  // Don't react to clicks in the header / person selector
+  if (e.target.closest('.app-header') || e.target.closest('.person-selector')) return;
+  // Tab-bar clicks should also collapse (signals "I'm done with intro, get to content")
+  if (!hero.classList.contains('collapsed')) hero.classList.add('collapsed');
+}, true);
 
 // ================================================================
 // MAIN RENDER ROUTER
@@ -2802,7 +3078,10 @@ function buildPersonShell(p) {
   const tabs = ['overview','protocols','bio','news'];
   const tabLabels = { overview:'Overview', protocols:'Source Matrix', bio:'Bio & Background', news:'News & Podcasts' };
   return `
-  <div class="person-hero fade-in">
+  <div class="person-hero fade-in" id="personHero">
+    <button class="hero-toggle" onclick="event.stopPropagation();toggleHero('personHero')" title="Collapse / expand">
+      <span class="hero-toggle-icon">▲</span>
+    </button>
     <div class="hero-photo-wrap">
       <img class="hero-photo" src="${p.photo}" alt="${p.name}"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
@@ -2977,7 +3256,7 @@ function renderTable() {
     return;
   }
   tw.innerHTML = `
-  <table class="recs-table">
+  <table class="recs-table source-matrix">
     <thead>
       <tr><th>Topic</th><th>Protocol</th><th>Source</th><th>Date</th><th>Conf.</th><th>Status</th></tr>
     </thead>
@@ -2985,20 +3264,51 @@ function renderTable() {
     ${recs.map(r=>`
       <tr onclick="selectRec('${r.id}')" class="${r.id===selectedRecId?'selected':''}">
         <td><span class="topic-tag">${r.topic}</span></td>
-        <td style="max-width:280px">
-          <div style="font-weight:600;color:var(--text-primary);line-height:1.3">${r.title}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:270px">${r.summary.substring(0,80)}…</div>
+        <td class="protocol-cell" style="max-width:280px">
+          <div style="font-weight:600;color:var(--text-primary);line-height:1.3;word-break:break-word">${r.title}</div>
+          <div class="protocol-summary-preview" style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:270px">${r.summary.substring(0,80)}…</div>
         </td>
         <td><span class="badge badge-${r.sourceType}">${cap(r.sourceType)}</span></td>
         <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${r.sourceDate}</td>
         <td><div class="confidence">${[1,2,3,4,5].map(i=>`<div class="conf-dot${i<=r.confidence?' filled':''}"></div>`).join('')}</div></td>
         <td><span class="badge badge-${r.status}">${cap(r.status)}</span></td>
+      </tr>
+      <tr class="inline-detail-row ${r.id===selectedRecId?'open':''}">
+        <td colspan="6">
+          <div class="inline-detail-content">
+            <div class="di-title">${r.title}</div>
+            <div class="di-meta">
+              <span>${r.source||''}</span>
+              <span>${r.sourceDate||''}</span>
+              <span class="badge badge-${r.sourceType}">${cap(r.sourceType||'')}</span>
+            </div>
+            <div class="di-summary">${r.summary||''}</div>
+            ${r.dosage ? `<div class="di-summary"><strong>Dosage:</strong> ${r.dosage}</div>` : ''}
+            ${r.timing ? `<div class="di-summary"><strong>Timing:</strong> ${r.timing}</div>` : ''}
+            ${r.sourceUrl ? `<a href="${r.sourceUrl}" target="_blank" rel="noopener" class="di-link" onclick="event.stopPropagation()">View Source ↗</a>` : ''}
+          </div>
+        </td>
       </tr>`).join('')}
     </tbody>
   </table>`;
 }
 
 function selectRec(id) {
+  // Toggle: if this row is already open, close it instead of re-opening
+  if (selectedRecId === id) {
+    selectedRecId = null;
+    renderTable();
+    // Clear the desktop side panel back to the empty state
+    const dp = document.getElementById('detailPanel');
+    if (dp) {
+      dp.innerHTML = `
+      <div class="detail-empty">
+        <div class="detail-empty-icon">📋</div>
+        <div>Click a row to view details</div>
+      </div>`;
+    }
+    return;
+  }
   selectedRecId = id;
   renderTable();
   const r = db.recommendations.find(x => x.id === id);
@@ -3044,7 +3354,7 @@ function renderBio(p) {
   const topics = [...new Set(recs.map(r => r.topic))];
   
   return `
-  <div class="fade-in" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+  <div class="fade-in bio-layout" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
     
     <!-- LEFT: Main bio + career highlights -->
     <div>
@@ -3160,9 +3470,28 @@ function renderBio(p) {
   </div>
 
   <style>
-    @media(max-width:900px) {
-      [class~="fade-in"] > div:last-child { position:static !important; }
+    /* Bio page layout collapses to single column on tablets and phones.
+       The inline grid-template-columns:1fr 340px is overridden here.
+       Both sides also need min-width:0 so flex/grid children can shrink
+       below their content width — without this, long words push past edges. */
+    .bio-layout > div { min-width: 0; }
+    .bio-layout > div > * { max-width: 100%; }
+    @media (max-width: 1100px) {
+      .bio-layout {
+        grid-template-columns: 1fr !important;
+      }
+      .bio-layout > div:last-child {
+        position: static !important;
+      }
     }
+    /* Prevent any long word/URL inside bio panels from overflowing */
+    .bio-layout .panel-section,
+    .bio-layout .panel-section * {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    /* The Spotify and YouTube SVG icons should not be broken by word-break */
+    .bio-layout svg { word-break: normal; }
   </style>`;
 }
 function renderNewsTab(p) {
@@ -3269,7 +3598,7 @@ function renderNewsTab(p) {
     </button>
   </div>
 
-  <!-- AI Analysis panel (Gemini-powered) -->
+  <!-- AI Analysis panel (Groq / Llama 3.3 70B) -->
   <div id="ai-panel-${p.id}" class="fade-in"></div>
 
   <div class="np-three-col fade-in">
@@ -3371,7 +3700,10 @@ function renderAllView(main) {
   const tabLabels = { overview:'Overview', protocols:'All Protocols', compare:'Comparison Matrix' };
 
   main.innerHTML = `
-  <div class="all-hero fade-in">
+  <div class="all-hero fade-in" id="allHero">
+    <button class="hero-toggle" onclick="event.stopPropagation();toggleHero('allHero')" title="Collapse / expand">
+      <span class="hero-toggle-icon">▲</span>
+    </button>
     <div class="all-hero-top">
       <div class="all-photo-strip">${stripHtml}</div>
       <div>
@@ -3584,7 +3916,7 @@ function renderAllTable(recs) {
     return;
   }
   tw.innerHTML = `
-  <table class="recs-table">
+  <table class="recs-table all-researchers">
     <thead><tr><th style="width:40px"></th><th>Person</th><th>Topic</th><th>Protocol</th><th>Source</th><th>Date</th><th>Conf.</th><th>Status</th></tr></thead>
     <tbody>
     ${recs.map(r => {
@@ -3607,9 +3939,9 @@ function renderAllTable(recs) {
           </div>
         </td>
         <td><span class="topic-tag">${r.topic}</span></td>
-        <td style="max-width:320px">
-          <div style="font-weight:600;line-height:1.3">${r.title}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:310px">${(r.summary||'').substring(0,80)}…</div>
+        <td class="protocol-cell" style="max-width:320px">
+          <div style="font-weight:600;line-height:1.3;word-break:break-word">${r.title}</div>
+          <div class="protocol-summary-preview" style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:310px">${(r.summary||'').substring(0,80)}…</div>
         </td>
         <td><span class="badge badge-${r.sourceType}">${cap(r.sourceType||'')}</span></td>
         <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);white-space:nowrap">${r.sourceDate||''}</td>
@@ -3618,27 +3950,27 @@ function renderAllTable(recs) {
       </tr>
       <tr class="all-rec-detail" id="detail-${r.id}" style="display:none">
         <td colspan="8" style="padding:0;background:var(--bg-base);border-left:3px solid ${accent}">
-          <div style="padding:18px 22px;display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
-            <div>
+          <div class="all-rec-detail-grid" style="padding:18px 22px;display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
+            <div style="min-width:0">
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Summary</div>
-              <div style="font-size:13px;line-height:1.5;color:var(--text-secondary);margin-bottom:14px">${r.summary||''}</div>
+              <div style="font-size:13px;line-height:1.5;color:var(--text-secondary);margin-bottom:14px;word-break:break-word">${r.summary||''}</div>
               
               ${(r.keyPoints && r.keyPoints.length) ? `
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Key Points</div>
               <ul style="list-style:none;padding:0;margin:0 0 14px 0">
                 ${r.keyPoints.map(kp => `
-                <li style="padding:5px 0;padding-left:20px;position:relative;font-size:12px;color:var(--text-secondary);line-height:1.5">
+                <li style="padding:5px 0;padding-left:20px;position:relative;font-size:12px;color:var(--text-secondary);line-height:1.5;word-break:break-word">
                   <span style="position:absolute;left:0;color:${accent};font-weight:700">→</span>${kp}
                 </li>`).join('')}
               </ul>` : ''}
               
-              ${r.dosage ? `<div style="padding:8px 12px;background:var(--bg-card);border-radius:6px;border-left:3px solid ${accent};font-size:12px;margin-bottom:10px"><strong style="color:${accent}">Dosage:</strong> <span style="color:var(--text-secondary)">${r.dosage}</span></div>` : ''}
-              ${r.timing ? `<div style="padding:8px 12px;background:var(--bg-card);border-radius:6px;font-size:12px;margin-bottom:10px"><strong>Timing:</strong> <span style="color:var(--text-secondary)">${r.timing}</span></div>` : ''}
+              ${r.dosage ? `<div style="padding:8px 12px;background:var(--bg-card);border-radius:6px;border-left:3px solid ${accent};font-size:12px;margin-bottom:10px;word-break:break-word"><strong style="color:${accent}">Dosage:</strong> <span style="color:var(--text-secondary)">${r.dosage}</span></div>` : ''}
+              ${r.timing ? `<div style="padding:8px 12px;background:var(--bg-card);border-radius:6px;font-size:12px;margin-bottom:10px;word-break:break-word"><strong>Timing:</strong> <span style="color:var(--text-secondary)">${r.timing}</span></div>` : ''}
             </div>
-            <div>
+            <div style="min-width:0">
               <div style="padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
                 <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Source</div>
-                <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px">${r.source||'—'}</div>
+                <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:4px;word-break:break-word">${r.source||'—'}</div>
                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">${r.sourceDate||''}</div>
                 ${r.sourceUrl ? `<a href="${r.sourceUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-block;padding:5px 10px;background:${accent};color:var(--text-inverse,#0a0a0a);border-radius:4px;font-size:11px;font-weight:700;text-decoration:none">View Source ↗</a>` : ''}
               </div>
@@ -3830,6 +4162,24 @@ function renderCompareMatrix() {
     },
   ];
 
+  // Sort by most-used: count yes + partial across all researchers, descending.
+  // Ties broken by yes-count alone, then alphabetically by label for stability.
+  matrixData.sort((a, b) => {
+    const score = (row) => {
+      let yes = 0, partial = 0;
+      allPeople.forEach(p => {
+        const s = row.data[p.id]?.s;
+        if (s === 'yes') yes++;
+        else if (s === 'partial') partial++;
+      });
+      return { total: yes + partial, yes };
+    };
+    const sa = score(a), sb = score(b);
+    if (sb.total !== sa.total) return sb.total - sa.total;
+    if (sb.yes !== sa.yes) return sb.yes - sa.yes;
+    return a.label.localeCompare(b.label);
+  });
+
   const dotHtml = (status, src, personId) => {
     const p = [...db.people, ...customPeople].find(x => x.id === personId);
     const accent = p ? p.accentColor : '#888';
@@ -3965,7 +4315,10 @@ function renderMyStack(main) {
   <div class="fade-in">
 
     <!-- HERO -->
-    <div class="person-hero" style="--person-accent:#e879f9">
+    <div class="person-hero" id="personHero" style="--person-accent:#e879f9">
+      <button class="hero-toggle" onclick="event.stopPropagation();toggleHero('personHero')" title="Collapse / expand">
+        <span class="hero-toggle-icon">▲</span>
+      </button>
       <div class="hero-photo-wrap" style="border-color:#e879f9;overflow:hidden;position:relative">
         <img class="hero-photo" src="data:image/png;base64,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" alt="Marko"
              style="width:100%;height:100%;object-fit:cover;object-position:center 20%" />
@@ -4129,7 +4482,10 @@ function renderStackCategoryChips() {
     const s = CATEGORY_STYLES[cat] || CATEGORY_STYLES['Other'];
     const isActive = activeCat === cat;
     const count = HOFFMAN_SUPPLEMENTS.filter(x => x.category === cat).length;
-    return `<button onclick="const cf=document.getElementById('stackCategoryFilter');if(cf){cf.value=cf.value==='${cat}'?'':'${cat}';selectedStackRow=null;filterStack();renderStackCategoryChips()}"
+    // Clicking a chip clears product filter + search so the displayed count
+    // always matches the chip count (otherwise stacked filters can hide rows).
+    // Re-clicking the active chip clears all category filters.
+    return `<button onclick="selectStackCategory('${cat.replace(/'/g,"\\'")}')"
       style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;cursor:pointer;transition:all .15s;
              background:${isActive ? s.bg : 'var(--bg-card)'};
              border:1.5px solid ${isActive ? s.border : 'var(--border)'};
@@ -4137,6 +4493,24 @@ function renderStackCategoryChips() {
       ${cat} <span style="opacity:.7">(${count})</span>
     </button>`;
   }).join('');
+}
+
+// Single-source filter: chip click clears product + search, then toggles category.
+// This matches how the per-person Topic chips work on other hero pages.
+function selectStackCategory(cat) {
+  const cf = document.getElementById('stackCategoryFilter');
+  const pf = document.getElementById('stackProductFilter');
+  const sf = document.getElementById('stackSearch');
+  if (!cf) return;
+  // Toggle: re-clicking the active chip clears it
+  const newCat = cf.value === cat ? '' : cat;
+  cf.value = newCat;
+  // Clear competing filters so the count matches what the chip advertises
+  if (pf) pf.value = '';
+  if (sf) sf.value = '';
+  selectedStackRow = null;
+  filterStack();
+  renderStackCategoryChips();
 }
 
 window.HOFFMAN_SUPPLEMENTS = [
@@ -4749,11 +5123,78 @@ const CACHE_TTL = 30 * 60 * 1000; // 30 min — don't re-fetch if opened again q
 // ══════════════════════════════════════════════════════════════════
 let YT_API_KEY = 'AIzaSyBz610p86kzPjka6R2GVRsTMIJniJCBBpY';  // ← Marko's YouTube Data API v3 key
 
-// ── Groq API key (free tier, 14,400 req/day on Llama 3.3 70B) ──
-// Get free at: console.groq.com/keys
-// REPLACE the placeholder below with your actual key before deploying
-let GROQ_API_KEY = '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';
-// ══════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════════════
+// ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼   GROQ API KEY (stored in browser only)   ▼▼▼▼▼▼▼▼▼▼▼▼▼
+// ════════════════════════════════════════════════════════════════════════════
+//
+//   The key is NEVER stored in this HTML file or committed to git.
+//   It lives only in your browser's localStorage, on your device.
+//
+//   First time you load the dashboard:
+//     → The AI panel will show "Set Groq Key" — click it and paste your key.
+//     → You can also type in the browser console:  setGroqKey('gsk_...')
+//
+//   Get a key at: https://console.groq.com/keys  (free, no credit card)
+//
+//   Model used: llama-3.3-70b-versatile  (free tier: ~30 requests/min)
+//
+// ════════════════════════════════════════════════════════════════════════════
+let GROQ_API_KEY = '';
+try {
+  GROQ_API_KEY = localStorage.getItem('groq_api_key') || '';
+} catch (e) {
+  // localStorage blocked (private mode etc.) — user will have to set per session
+  console.warn('[Groq] localStorage unavailable:', e.message);
+}
+
+// Helpers callable from UI or console
+window.setGroqKey = function(key) {
+  if (!key || typeof key !== 'string') { console.warn('setGroqKey: pass a non-empty string'); return false; }
+  const trimmed = key.trim();
+  if (!trimmed.startsWith('gsk_') || trimmed.length < 20) {
+    console.warn('setGroqKey: key should start with gsk_ and be at least 20 chars');
+    return false;
+  }
+  GROQ_API_KEY = trimmed;
+  try { localStorage.setItem('groq_api_key', trimmed); } catch (e) {}
+  // Clear any cached AI errors and force refresh of any rendered AI panel
+  lastAiError = null;
+  Object.keys(aiCache).forEach(k => delete aiCache[k]);
+  console.log('[Groq] Key saved to localStorage. Refreshing AI panels…');
+  // Re-render current person if we can
+  try {
+    if (typeof renderPerson === 'function' && typeof currentPersonId !== 'undefined') {
+      renderPerson(currentPersonId);
+    }
+  } catch (e) {}
+  return true;
+};
+window.clearGroqKey = function() {
+  GROQ_API_KEY = '';
+  try { localStorage.removeItem('groq_api_key'); } catch (e) {}
+  console.log('[Groq] Key cleared.');
+  return true;
+};
+// Interactive prompt — called by the "Set Groq Key" button in the AI panel
+window.promptGroqKey = function() {
+  const current = GROQ_API_KEY ? ' (current key ends with …' + GROQ_API_KEY.slice(-6) + ')' : '';
+  const key = window.prompt(
+    'Paste your Groq API key' + current + ':\n\n' +
+    '• Get one at console.groq.com/keys (free)\n' +
+    '• Starts with gsk_\n' +
+    '• Stored only in this browser, never sent to GitHub',
+    ''
+  );
+  if (key === null) return; // user cancelled
+  if (!key.trim()) { alert('No key entered.'); return; }
+  if (window.setGroqKey(key)) {
+    alert('Key saved. Refreshing…');
+  } else {
+    alert('That didn\'t look like a valid Groq key. It should start with gsk_ and be at least 20 characters long.');
+  }
+};
+// ════════════════════════════════════════════════════════════════════════════
 
 // ── Per-person RSS feeds & YouTube channels ──
 function getPersonFeeds(p) {
@@ -4920,65 +5361,42 @@ async function fetchYouTube(channelId, personName) {
 }
 
 // ════════════════════════════════════════════════════════════════════
-// GEMINI AI — news summaries + protocol-change detection
+// GROQ AI — news summaries + protocol-change detection
 // ════════════════════════════════════════════════════════════════════
-// Persistent cache: survives page reloads via localStorage
-// Extended TTL to 6 hours — researchers don't post new content every 30 min,
-// and this dramatically cuts daily Gemini API calls
-const AI_CACHE_TTL = 6 * 60 * 60 * 1000;
-const AI_CACHE_KEY = 'longevityHub_aiCache_v1';
+const aiCache = {};
+const AI_CACHE_TTL = 30 * 60 * 1000;
+let lastAiError = null;
 
-function loadAiCache() {
-  try {
-    const raw = localStorage.getItem(AI_CACHE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    // Prune expired entries on load
-    const now = Date.now();
-    for (const k of Object.keys(parsed)) {
-      if (!parsed[k] || (now - parsed[k].timestamp) > AI_CACHE_TTL) delete parsed[k];
-    }
-    return parsed;
-  } catch(e) { console.warn('[AI Cache] load failed:', e); return {}; }
-}
+// Rate limiting: Groq free tier is ~30 req/min on llama-3.3-70b-versatile.
+// Space requests 2s apart to stay safe; 30s cooldown on any 429.
+let _groqLastCall = 0;
+let _groqCooldownUntil = 0;
+const GROQ_MIN_INTERVAL = 2000;
 
-function saveAiCache() {
-  try { localStorage.setItem(AI_CACHE_KEY, JSON.stringify(aiCache)); }
-  catch(e) { console.warn('[AI Cache] save failed:', e); }
-}
-
-const aiCache = loadAiCache();
-let lastGeminiError = null;
-
-// Rate limiting: don't fire more than 1 request per 4 seconds (free tier is 15/min)
-let _geminiLastCall = 0;
-let _geminiCooldownUntil = 0;
-const GEMINI_MIN_INTERVAL = 4500;
-
-async function callGemini(prompt) {
-  if (!GROQ_API_KEY || !GROQ_API_KEY.startsWith('gsk_')) {
-    lastGeminiError = 'No valid Groq API key set — check line 4755 of the HTML';
+async function callGroq(prompt) {
+  if (!GROQ_API_KEY) {
+    lastAiError = 'No Groq API key set — click "Set Groq Key" below or run setGroqKey("gsk_...") in the console';
     return null;
   }
-  
+
   // Cooldown check — if we recently got 429, back off
-  if (Date.now() < _geminiCooldownUntil) {
-    const waitSec = Math.ceil((_geminiCooldownUntil - Date.now()) / 1000);
-    lastGeminiError = `Rate limited — cooling down ${waitSec}s`;
+  if (Date.now() < _groqCooldownUntil) {
+    const waitSec = Math.ceil((_groqCooldownUntil - Date.now()) / 1000);
+    lastAiError = `Rate limited — cooling down ${waitSec}s (free tier is ~30 req/min)`;
     return null;
   }
-  
-  // Space requests at least 4.5s apart (Groq free tier is 30 req/min on Llama 70B, plenty of headroom)
-  const sinceLastCall = Date.now() - _geminiLastCall;
-  if (sinceLastCall < GEMINI_MIN_INTERVAL) {
-    await new Promise(r => setTimeout(r, GEMINI_MIN_INTERVAL - sinceLastCall));
+
+  // Space requests at least GROQ_MIN_INTERVAL apart
+  const sinceLastCall = Date.now() - _groqLastCall;
+  if (sinceLastCall < GROQ_MIN_INTERVAL) {
+    await new Promise(r => setTimeout(r, GROQ_MIN_INTERVAL - sinceLastCall));
   }
-  _geminiLastCall = Date.now();
-  
+  _groqLastCall = Date.now();
+
   const url = 'https://api.groq.com/openai/v1/chat/completions';
   try {
     const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 15000);
+    const tid = setTimeout(() => ctrl.abort(), 20000);
     const res = await fetch(url, {
       method: 'POST',
       signal: ctrl.signal,
@@ -4989,46 +5407,45 @@ async function callGemini(prompt) {
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: 'system', content: 'You are a longevity research analyst. Always respond with valid JSON only — no markdown, no code fences, no prose before or after the JSON object.' },
+          { role: 'system', content: 'You are a rigorous longevity research analyst. You return ONLY valid JSON. You do not speculate beyond the evidence in the input. You distinguish between "mentioned" (topic came up) and "recommended" (explicit endorsement with a protocol or dose).' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.3,
-        max_tokens: 1200,
+        temperature: 0.2,
+        max_tokens: 1500,
         response_format: { type: 'json_object' }
       })
     });
     clearTimeout(tid);
     if (!res.ok) {
-      const err = await res.text().catch(()=>'');
+      const err = await res.text().catch(() => '');
       if (res.status === 429) {
-        // Rate limit — cooldown for 60s before trying again
-        _geminiCooldownUntil = Date.now() + 60000;
-        lastGeminiError = 'Rate limit exceeded — cooldown for 60s. Groq free tier is ~30 req/min.';
-      } else if (res.status === 400) {
-        lastGeminiError = 'Invalid request: ' + (err ? err.substring(0,200) : '');
+        _groqCooldownUntil = Date.now() + 30000;
+        lastAiError = 'Rate limit exceeded — cooldown for 30s. Free tier is ~30 req/min.';
       } else if (res.status === 401) {
-        lastGeminiError = 'API key rejected — check Groq key is valid (console.groq.com/keys)';
+        lastAiError = 'API key rejected — check GROQ_API_KEY is valid';
+      } else if (res.status === 400) {
+        lastAiError = 'Invalid request — ' + (err.substring(0, 150) || 'bad prompt format');
       } else {
-        lastGeminiError = 'HTTP ' + res.status + (err ? ' — ' + err.substring(0,150) : '');
+        lastAiError = 'HTTP ' + res.status + (err ? ' — ' + err.substring(0, 150) : '');
       }
-      console.warn('[Groq]', lastGeminiError);
+      console.warn('[Groq]', lastAiError);
       return null;
     }
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content;
-    if (!text) { lastGeminiError = 'Empty response'; return null; }
-    lastGeminiError = null;
+    if (!text) { lastAiError = 'Empty response from Groq'; return null; }
+    lastAiError = null;
     try { return JSON.parse(text); }
     catch {
       const cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
       try { return JSON.parse(cleaned); }
-      catch { 
-        return { summary: text.substring(0, 500), protocolChanges: [], stackRelevance: [], topTopics: [] };
+      catch {
+        return { summary: text.substring(0, 500), protocolChanges: [], stackRelevance: [], topTopics: [], contradictions: [] };
       }
     }
-  } catch(e) {
-    lastGeminiError = e.name === 'AbortError' ? 'Request timed out (>15s)' : e.message;
-    console.warn('[Groq] error:', lastGeminiError);
+  } catch (e) {
+    lastAiError = e.name === 'AbortError' ? 'Request timed out (>20s)' : e.message;
+    console.warn('[Groq] error:', lastAiError);
     return null;
   }
 }
@@ -5043,48 +5460,135 @@ function getStackIngredientNames() {
     'Folate','Iodine','Selenium','Boron','Methylene Blue','Urolithin A'];
 }
 
-async function generateAiNewsSummary(personId, liveData, opts = {}) {
-  if (!GROQ_API_KEY || !GROQ_API_KEY.startsWith('gsk_')) return null;
-  const forceRefresh = opts.forceRefresh === true;
+// ── Known positions library: short, high-signal facts the AI should anchor on ──
+// These are established public stances; they help the model distinguish
+// "new development" from "restatement of a long-held view" and avoid false alerts.
+const KNOWN_POSITIONS = {
+  'bryan-johnson': [
+    'Runs Blueprint protocol: 100+ measurements, daily; target is to not age',
+    'Takes ~100 supplements daily incl. NMN/NR, metformin 500mg ER cycled, rapamycin weekly',
+    'Sleeps by 8:30pm; eats all food before noon; 100% vegan',
+    'Publishes all data open-source at protocol.bryanjohnson.com',
+  ],
+  'andrew-huberman': [
+    'Podcaster / Stanford neuroscientist; emphasizes sunlight, sleep, Zone 2',
+    'Takes NMN ~1-2g + NR 500mg daily, creatine 5g, omega-3 2-3g EPA, 5-10k IU D3',
+    'Known for 10-15 min morning sunlight protocol and non-sleep deep rest (NSDR)',
+  ],
+  'david-sinclair': [
+    'Harvard geneticist; author of Lifespan; NAD+ researcher',
+    'Takes 1g NMN morning (in yogurt), 1g resveratrol, 1g metformin nightly (skips workout days)',
+    'Cold exposure, plant-heavy diet, 16-18hr daily fast (skips breakfast)',
+  ],
+  'rhonda-patrick': [
+    'PhD biochem; runs FoundMyFitness; heavy emphasis on micronutrients + sauna',
+    'Takes 2g EPA+DHA (omega-3 index 8%+), 4-6k IU D3, 5-15g creatine, multivitamin',
+    'Finnish sauna 174-180°F 4-7x/week; Norwegian 4x4 HIIT; avoids NMN pending human RCTs',
+  ],
+  'ben-greenfield': [
+    'Biohacker/author Boundless; hybrid paleo-keto-ancestral diet',
+    'Cold thermogenesis + sauna contrast; HBOT regular; NMN/NR for sleep/aging',
+    'Super-slow strength 2-3x/week; 10k steps + tiered cardio',
+  ],
+  'dave-asprey': [
+    'Founder Bulletproof; author Smarter Not Harder; Upgrade Labs',
+    'Bulletproof Coffee extends morning fast; 16:8 IF; HBOT at Upgrade Labs',
+    'Prefers berberine over metformin as non-Rx alternative; ADK (A/D3/K2) daily',
+  ],
+  'peter-attia': [
+    'Physician; author Outlive; runs The Drive podcast; Medicine 3.0 framing',
+    'Does NOT take NMN/NR (evidence threshold not met); does take 5g creatine, 5k IU D3',
+    '2.5g EPA + 1g DHA daily (omega-3 index 10-12%); does NOT take metformin (may blunt exercise adaptation)',
+    'Rapamycin weekly (cycled); zone 2 + VO2 max training; strength 3-4x/week',
+  ],
+};
+
+async function generateAiNewsSummary(personId, liveData) {
+  if (!GROQ_API_KEY) return null;
   const cached = aiCache[personId];
-  if (!forceRefresh && cached && (Date.now() - cached.timestamp) < AI_CACHE_TTL) return cached.data;
+  if (cached && (Date.now() - cached.timestamp) < AI_CACHE_TTL) return cached.data;
   const allPeople = [...(window.LONGEVITY_DB?.people || []), ...(window.customPeople || [])];
   const p = allPeople.find(x => x.id === personId);
   if (!p) return null;
-  
+
   // Fall back to static curated news if live fetch returned nothing
   let news = (liveData?.news || []).slice(0, 10);
   if (news.length === 0 && p.latestNews) news = p.latestNews.slice(0, 8);
   const videos = (liveData?.youtube || []).slice(0, 6);
   const podcasts = (p.spotifyEpisodes || []).slice(0, 4);
   if (!news.length && !videos.length && !podcasts.length) return null;
-  const stack = getStackIngredientNames().join(', ');
-  const prompt = 'You are a longevity research analyst. Analyze the latest content from ' + p.name + ' (' + p.title + ') and return a JSON object.\n\n' +
-    'RECENT NEWS (' + news.length + '):\n' +
-    (news.map((n, i) => (i+1) + '. [' + (n.date || 'recent') + '] ' + n.title + (n.source ? ' — '+n.source : '')).join('\n') || 'None') + '\n\n' +
-    'RECENT YOUTUBE VIDEOS (' + videos.length + '):\n' +
-    (videos.map((v, i) => (i+1) + '. [' + (v.date || 'recent') + '] ' + v.title).join('\n') || 'None') + '\n\n' +
-    'RECENT PODCASTS (' + podcasts.length + '):\n' +
-    (podcasts.map((e, i) => (i+1) + '. [' + (e.date || 'recent') + '] ' + e.title).join('\n') || 'None') + '\n\n' +
-    'USER SUPPLEMENT STACK: ' + stack + '\n\n' +
-    'Return ONLY valid JSON:\n' +
-    '{\n' +
-    '  "summary": "2-3 sentence factual summary of what ' + p.name + ' has been focused on recently. Reference specific titles above. Third person. Under 80 words.",\n' +
-    '  "protocolChanges": [{"change": "brief description", "source": "which item above", "confidence": "high/medium/low"}],\n' +
-    '  "stackRelevance": [{"ingredient": "name from stack", "insight": "what ' + p.name + ' says about it", "source": "which item above"}],\n' +
-    '  "topTopics": ["topic1", "topic2", "topic3"]\n' +
-    '}\n\n' +
-    'Rules:\n' +
-    '- Empty array if no protocol changes clearly implied: "protocolChanges": []\n' +
-    '- Empty array if nothing relates to user stack: "stackRelevance": []\n' +
-    '- Only flag protocolChanges when titles clearly imply a new recommendation, dose change, or reversal\n' +
-    '- topTopics: 2-4 short labels like "Zone 2", "Rapamycin", "Sleep"';
 
-  const result = await callGemini(prompt);
-  if (result) {
-    aiCache[personId] = { data: result, timestamp: Date.now() };
-    saveAiCache();
-  }
+  const stack = getStackIngredientNames().join(', ');
+  const today = new Date().toISOString().slice(0, 10);
+  const knownPositions = KNOWN_POSITIONS[personId] || [];
+
+  // ── Upgraded prompt with 5 planned improvements ──
+  // 1. Date context (today + what "recent" means)
+  // 2. Per-researcher known positions (anchor against restating old news as new)
+  // 3. Tiered confidence (5 levels, not 3)
+  // 4. "mentioned" vs "recommended" distinction
+  // 5. Cross-researcher contradictions surface in output
+  const prompt =
+    'ANALYST TASK — Summarize recent public output from ' + p.name + ' (' + p.title + ').\n\n' +
+
+    '### CONTEXT\n' +
+    "Today's date: " + today + '\n' +
+    '"Recent" = within the last 60 days of the dates shown.\n' +
+    'Source titles below are your ONLY evidence. Do not invent details not in the titles.\n\n' +
+
+    '### KNOWN LONG-STANDING POSITIONS (do NOT flag these as new)\n' +
+    (knownPositions.length
+      ? knownPositions.map((k, i) => '- ' + k).join('\n')
+      : '(none supplied — treat conservatively)') + '\n\n' +
+
+    '### RECENT NEWS (' + news.length + ')\n' +
+    (news.map((n, i) => (i + 1) + '. [' + (n.date || 'recent') + '] ' + n.title + (n.source ? ' — ' + n.source : '')).join('\n') || 'None') + '\n\n' +
+
+    '### RECENT YOUTUBE VIDEOS (' + videos.length + ')\n' +
+    (videos.map((v, i) => (i + 1) + '. [' + (v.date || 'recent') + '] ' + v.title).join('\n') || 'None') + '\n\n' +
+
+    '### RECENT PODCASTS (' + podcasts.length + ')\n' +
+    (podcasts.map((e, i) => (i + 1) + '. [' + (e.date || 'recent') + '] ' + e.title).join('\n') || 'None') + '\n\n' +
+
+    "### USER'S SUPPLEMENT STACK (for stack-relevance)\n" +
+    stack + '\n\n' +
+
+    '### DEFINITIONS\n' +
+    '- "mentioned": the topic came up in a title but no dose, protocol, or endorsement is visible in the title.\n' +
+    '- "recommended": the title explicitly endorses or gives a protocol/dose.\n' +
+    '- "protocol change": a NEW dose, timing, frequency, or reversal — NOT a restatement of a known position.\n\n' +
+
+    '### CONFIDENCE SCALE (use for every claim)\n' +
+    '- 5 = explicit protocol/dose in title (e.g., "5g creatine daily")\n' +
+    '- 4 = strong endorsement visible but no exact dose ("Attia on why everyone should lift")\n' +
+    '- 3 = topic discussed, stance inferable ("The case for omega-3")\n' +
+    '- 2 = topic only mentioned ("Attia on sleep, stress, longevity")\n' +
+    '- 1 = tangentially related or ambiguous\n\n' +
+
+    '### OUTPUT — return ONLY this JSON shape, nothing else:\n' +
+    '{\n' +
+    '  "summary": "2-3 sentences, <80 words, third person. Reference specific titles. State what is NEW vs continuing themes. If nothing new, say so plainly.",\n' +
+    '  "topTopics": ["2-4 short labels like Zone 2, Rapamycin, Sleep"],\n' +
+    '  "protocolChanges": [\n' +
+    '    { "change": "brief description", "kind": "mentioned|recommended", "source": "item # above", "confidence": 1-5 }\n' +
+    '  ],\n' +
+    '  "stackRelevance": [\n' +
+    '    { "ingredient": "name from stack", "insight": "what the title actually says about it", "kind": "mentioned|recommended", "source": "item # above", "confidence": 1-5 }\n' +
+    '  ],\n' +
+    '  "contradictions": [\n' +
+    '    { "topic": "e.g., Metformin", "oldPosition": "what they used to hold (from KNOWN POSITIONS above)", "newSignal": "what the recent title suggests", "source": "item # above", "confidence": 1-5 }\n' +
+    '  ]\n' +
+    '}\n\n' +
+
+    '### STRICT RULES\n' +
+    '- Empty array [] when nothing qualifies. Do not pad.\n' +
+    '- NEVER flag a known position as a protocol change or contradiction.\n' +
+    '- Only include confidence >= 3 entries in protocolChanges and contradictions.\n' +
+    '- stackRelevance: include confidence 2+ so user sees even passing mentions.\n' +
+    '- Use "source" field as the number of the item in the lists above (e.g., "News #3", "Video #1").';
+
+  const result = await callGroq(prompt);
+  if (result) aiCache[personId] = { data: result, timestamp: Date.now() };
   return result;
 }
 
@@ -5117,7 +5621,11 @@ function renderAiSummaryPanel(personId, aiData, loading) {
   }
 
   if (!aiData) {
-    const err = lastGeminiError || 'Unknown error';
+    const err = lastAiError || 'Unknown error';
+    const hasKey = !!GROQ_API_KEY;
+    const keyHint = hasKey
+      ? `<span style="color:var(--text-muted);font-size:11px">Key on file: …${GROQ_API_KEY.slice(-6)}</span>`
+      : `<span style="color:var(--amber);font-size:11px">No Groq key set</span>`;
     return `<div class="ai-panel" style="--ai-accent:${accent}">
       <div class="ai-panel-header">
         <div class="ai-badge">
@@ -5127,8 +5635,18 @@ function renderAiSummaryPanel(personId, aiData, loading) {
         <div class="ai-status" style="color:var(--amber)"><span class="ai-dot" style="background:var(--amber)"></span> Unavailable</div>
       </div>
       <div class="ai-panel-body" style="font-size:12px;color:var(--text-muted);padding:14px 18px">
-        AI summary couldn't be generated: <strong style="color:var(--amber)">${err}</strong><br>
-        Check browser console (F12) for details.
+        <div style="margin-bottom:10px">
+          AI summary couldn't be generated: <strong style="color:var(--amber)">${err}</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          ${keyHint}
+          <button onclick="promptGroqKey()" style="padding:5px 12px;background:var(--accent);color:var(--text-inverse,#0a0a0a);border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">${hasKey ? 'Replace Groq Key' : 'Set Groq Key'}</button>
+          ${hasKey ? `<button onclick="if(confirm('Clear Groq key from this browser?')){clearGroqKey();renderPerson(currentPersonId)}" style="padding:5px 10px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Clear Key</button>` : ''}
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.4">
+          Key is stored only in this browser's localStorage, never in the source code.<br>
+          Get a free key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.groq.com/keys</a>.
+        </div>
       </div>
     </div>`;
   }
@@ -5136,6 +5654,28 @@ function renderAiSummaryPanel(personId, aiData, loading) {
   const changes = aiData.protocolChanges || [];
   const stackRel = aiData.stackRelevance || [];
   const topics = aiData.topTopics || [];
+  const contradictions = aiData.contradictions || [];
+
+  // Render numeric 1-5 confidence as filled dots; fall back to legacy high/medium/low
+  const renderConfidence = (c) => {
+    const n = typeof c === 'number'
+      ? Math.max(1, Math.min(5, c))
+      : (c === 'high' ? 5 : c === 'medium' ? 3 : c === 'low' ? 2 : 0);
+    if (!n) return '<span style="color:var(--text-muted)">n/a</span>';
+    const color = n >= 4 ? 'var(--green)' : n >= 3 ? 'var(--amber)' : 'var(--text-muted)';
+    let dots = '';
+    for (let i = 1; i <= 5; i++) {
+      dots += `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:2px;background:${i<=n?color:'var(--border-bright)'};opacity:${i<=n?1:.35}"></span>`;
+    }
+    return `<span style="display:inline-flex;align-items:center;gap:3px" title="Confidence ${n}/5">${dots}<span style="color:${color};font-family:var(--font-mono);font-size:10px;margin-left:3px">${n}/5</span></span>`;
+  };
+
+  // "recommended" vs "mentioned" badge
+  const kindBadge = (k) => {
+    if (k === 'recommended') return '<span style="display:inline-block;padding:1px 6px;border-radius:4px;background:rgba(34,197,94,.15);color:#22c55e;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-right:6px">Recommended</span>';
+    if (k === 'mentioned') return '<span style="display:inline-block;padding:1px 6px;border-radius:4px;background:rgba(139,146,160,.15);color:var(--text-muted);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-right:6px">Mentioned</span>';
+    return '';
+  };
 
   return `<div class="ai-panel" style="--ai-accent:${accent}">
     <div class="ai-panel-header">
@@ -5143,7 +5683,7 @@ function renderAiSummaryPanel(personId, aiData, loading) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="${accent}"><path d="M12 2l2.09 6.26L20 9.27l-5 4.87L16.18 21 12 17.77 7.82 21 9 14.14l-5-4.87 5.91-.01L12 2z"/></svg>
         AI Analysis
       </div>
-      <div class="ai-status" style="color:var(--green)"><span class="ai-dot" style="background:var(--green)"></span> Llama 3.3 70B · 6h cache</div>
+      <div class="ai-status" style="color:var(--green)"><span class="ai-dot" style="background:var(--green)"></span> Llama 3.3 70B · 30m cache</div>
     </div>
     <div class="ai-panel-body">
       <div class="ai-section">
@@ -5162,8 +5702,29 @@ function renderAiSummaryPanel(personId, aiData, loading) {
         <div class="ai-section-label" style="color:var(--amber)">⚡ Protocol Change Alerts (${changes.length})</div>
         ${changes.map(c => `
           <div class="ai-alert ai-alert-change">
-            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:3px">${c.change}</div>
-            <div style="font-size:10px;color:var(--text-muted)">Source: ${c.source || 'n/a'} · Confidence: <span style="color:${c.confidence==='high'?'var(--green)':c.confidence==='medium'?'var(--amber)':'var(--text-muted)'}">${c.confidence || 'n/a'}</span></div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:3px">${kindBadge(c.kind)}${c.change}</div>
+            <div style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span>Source: ${c.source || 'n/a'}</span>
+              <span style="opacity:.5">·</span>
+              ${renderConfidence(c.confidence)}
+            </div>
+          </div>`).join('')}
+      </div>` : ''}
+      ${contradictions.length ? `
+      <div class="ai-section">
+        <div class="ai-section-label" style="color:#ef4444">⚠️ Position Shifts (${contradictions.length})</div>
+        ${contradictions.map(c => `
+          <div class="ai-alert" style="background:rgba(239,68,68,.06);border-left:3px solid #ef4444;padding:8px 12px;margin-bottom:6px;border-radius:6px">
+            <div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:4px">${c.topic || 'Shift detected'}</div>
+            <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:3px">
+              <strong style="color:var(--text-muted)">Was:</strong> ${c.oldPosition || '—'}<br>
+              <strong style="color:var(--text-muted)">Now:</strong> ${c.newSignal || '—'}
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span>Source: ${c.source || 'n/a'}</span>
+              <span style="opacity:.5">·</span>
+              ${renderConfidence(c.confidence)}
+            </div>
           </div>`).join('')}
       </div>` : ''}
       ${stackRel.length ? `
@@ -5171,14 +5732,18 @@ function renderAiSummaryPanel(personId, aiData, loading) {
         <div class="ai-section-label" style="color:#e879f9">💊 Relevant to Your Stack (${stackRel.length})</div>
         ${stackRel.map(s => `
           <div class="ai-alert ai-alert-stack">
-            <div style="font-size:11px;font-weight:700;color:#e879f9;margin-bottom:3px">${s.ingredient}</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;line-height:1.5">${s.insight}</div>
-            <div style="font-size:10px;color:var(--text-muted)">Source: ${s.source || 'n/a'}</div>
+            <div style="font-size:11px;font-weight:700;color:#e879f9;margin-bottom:3px">${kindBadge(s.kind)}${s.ingredient}</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;line-height:1.5">${s.insight}</div>
+            <div style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span>Source: ${s.source || 'n/a'}</span>
+              <span style="opacity:.5">·</span>
+              ${renderConfidence(s.confidence)}
+            </div>
           </div>`).join('')}
       </div>` : ''}
-      ${!changes.length && !stackRel.length ? `
+      ${!changes.length && !stackRel.length && !contradictions.length ? `
       <div style="font-size:11px;color:var(--text-muted);margin-top:10px;font-style:italic">
-        No protocol changes or stack-specific insights detected in this week's content.
+        No protocol changes, position shifts, or stack-specific insights detected in this week's content.
       </div>` : ''}
     </div>
   </div>`;
@@ -5424,7 +5989,7 @@ async function refreshNewsTab(personId, opts = {}) {
   updateRefreshStatus(personId, 'loading', null);
 
   // Only show AI loading / trigger AI if this is a user-triggered refresh
-  // (skips the auto-fetch on tab-open to conserve Gemini quota)
+  // (skips the auto-fetch on tab-open to conserve Groq quota)
   const userTriggered = opts.userTriggered !== false;
   const aiContainer = document.getElementById('ai-panel-' + personId);
   if (userTriggered && aiContainer) {
@@ -5441,7 +6006,7 @@ async function refreshNewsTab(personId, opts = {}) {
           <div class="ai-status" style="color:var(--text-muted)"><span class="ai-dot"></span> Click Refresh to generate</div>
         </div>
         <div class="ai-panel-body" style="font-size:12px;color:var(--text-muted);padding:14px 18px">
-          AI summary is cached for 6 hours and persists across page reloads. Click <strong>↻ Refresh Live Feeds</strong> to fetch fresh data and generate the AI analysis.
+          AI summary is cached for 30 minutes. Click <strong>↻ Refresh Live Feeds</strong> to fetch fresh data and generate the AI analysis.
         </div>
       </div>`;
   }
@@ -5452,7 +6017,7 @@ async function refreshNewsTab(personId, opts = {}) {
     const stats = { news: data?.news?.length || 0, youtube: data?.youtube?.length || 0 };
     updateRefreshStatus(personId, 'live', data?.fetchedAt || new Date(), stats);
     
-    // Only call Gemini on user-triggered refresh (conserves quota)
+    // Only call Groq on user-triggered refresh (conserves quota)
     if (userTriggered) {
       generateAiNewsSummary(personId, data).then(aiData => {
         const c = document.getElementById('ai-panel-' + personId);
@@ -5474,7 +6039,7 @@ async function refreshNewsTab(personId, opts = {}) {
 // ── Auto-fetch when news tab opens ──
 function autoFetchOnNewsTab(personId) {
   // Small delay so DOM is rendered first
-  // Pass userTriggered: false so AI doesn't auto-fire (saves Gemini quota)
+  // Pass userTriggered: false so AI doesn't auto-fire (saves Groq quota)
   setTimeout(() => refreshNewsTab(personId, { userTriggered: false }), 300);
 }
 
